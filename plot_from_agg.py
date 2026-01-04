@@ -144,11 +144,7 @@ if __name__ == "__main__":
             strategy_params = [p for p in all_params if float(p.split('=')[1]) in allowed]
         else:
             # Heatmap: only >= 0.9
-            # strategy_params = [p for p in all_params if float(p.split('=')[1]) >= 0.9]
-
-            # comparing w/ what sensei has
-            allowed = {0.25, 0.5, 0.75, 1.0}
-            strategy_params = [p for p in all_params if float(p.split('=')[1]) in allowed]
+            strategy_params = [p for p in all_params if float(p.split('=')[1]) >= 0.9]
 
         # Deduplicate by float value (e.g., pc=1 and pc=1.0 are same)
         seen = set()
