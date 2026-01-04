@@ -1,3 +1,5 @@
+/*usr/local/go/bin/go build -o teesside-go $0 && ./teesside-go "$@" */
+
 package main
 
 import (
