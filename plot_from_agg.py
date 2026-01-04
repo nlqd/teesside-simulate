@@ -60,22 +60,13 @@ def build_heatmap_matrix(agg_dir, game_type, strategy, game_param, strategy_para
     return data_matrix, thetas
 
 
-def plot_heatmap(agg_dir, game_type, strategy, game_param, strategy_params, metric, output_file=None, population_size=10000):
-    """Load data and plot heatmap."""
-    data_matrix, thetas = build_heatmap_matrix(agg_dir, game_type, strategy, game_param, strategy_params, metric, population_size)
-    title = f"{metric.replace('_', ' ').title()} - {game_type.upper()} {strategy.upper()} {game_param}"
-
-    plotter = SimulationPlotter()
-    plotter.plot_heatmap_from_agg(data_matrix, strategy_params, thetas, metric, title, output_file)
-
-
 def build_efficiency_matrices(agg_dir, game_type, strategy, game_param, strategy_params):
     """Build cost and base welfare matrices for efficiency comparison."""
-    # Get cost (summed over generations)
+    # Get cost
     cost_matrix, thetas = build_heatmap_matrix(
         agg_dir, game_type, strategy, game_param, strategy_params, 'cost', population_size=1
     )
-    # Get social welfare (final value)
+    # Get social welfare
     welfare_matrix, _ = build_heatmap_matrix(
         agg_dir, game_type, strategy, game_param, strategy_params, 'social_welfare', population_size=1
     )
@@ -153,7 +144,12 @@ if __name__ == "__main__":
             strategy_params = [p for p in all_params if float(p.split('=')[1]) in allowed]
         else:
             # Heatmap: only >= 0.9
-            strategy_params = [p for p in all_params if float(p.split('=')[1]) >= 0.9]
+            # strategy_params = [p for p in all_params if float(p.split('=')[1]) >= 0.9]
+
+            # comparing w/ what sensei has
+            allowed = {0.25, 0.5, 0.75, 1.0}
+            strategy_params = [p for p in all_params if float(p.split('=')[1]) in allowed]
+
         # Deduplicate by float value (e.g., pc=1 and pc=1.0 are same)
         seen = set()
         deduped = []
@@ -178,9 +174,6 @@ if __name__ == "__main__":
             exit(1)
         output_file = args.output or f"{output_dir}/{args.game}_{args.strategy}_{args.game_param}_timeseries_theta={args.theta}.png"
         plot_timeseries(args.agg_dir, args.game, args.strategy, args.game_param, strategy_params, args.theta, output_file)
-    elif args.plot_type == 'heatmap':
-        output_file = args.output or f"{output_dir}/{args.game}_{args.strategy}_{args.game_param}_heatmap_{args.metric}.png"
-        plot_heatmap(args.agg_dir, args.game, args.strategy, args.game_param, strategy_params, args.metric, output_file)
     elif args.plot_type == 'efficiency':
         a_str = '_'.join(str(a) for a in args.a_values)
         output_file = args.output or f"{output_dir}/{args.game}_{args.strategy}_{args.game_param}_efficiency_a={a_str}.png"

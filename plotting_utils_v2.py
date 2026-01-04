@@ -2,9 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import re
-import os
 from typing import List, Dict, Tuple, Optional, Any, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -19,16 +18,13 @@ class PlotConfig:
     max_generations: int = 50
     population_size: int = 10000
 
-    grid_alpha: float = 0.3
-    linewidth: float = 2
-    fill_alpha: float = 0.3
     dpi: int = 300
 
     label_fontsize: int = 12
     tick_fontsize: int = 8
     title_fontsize: int = 11
 
-    color_map = "plasma"
+    color_map = "inferno"
     color_interp = "bilinear"
 
 
@@ -265,91 +261,6 @@ class SimulationPlotter:
             ax_welfare.fill_between(generations, welfare - std_welfare, welfare + std_welfare,
                                     color=colors['welfare'], alpha=0.3)
 
-    def plot_timeseries_grid(
-        self,
-        data_dir: str,
-        param_values: List[str],
-        theta_value: float,
-        seeds: List[int],
-        strategy: str = 'pop',
-        theta_range: str = None,
-        show_std: bool = True,
-        output_filename: Optional[str] = None,
-        show_plot: bool = False
-    ) -> str:
-        """
-        Plot time series grid averaged across seeds.
-
-        Args:
-            strategy: 'pop' or 'neb'
-            param_values: pc values for POP, nc values (as strings) for NEB
-        """
-        n_cols = len(param_values)
-        fig, axes = plt.subplots(3, n_cols, figsize=(4 * n_cols, 6),
-                                 gridspec_kw={'hspace': 0.3, 'wspace': 0.25})
-        if n_cols == 1:
-            axes = axes.reshape(-1, 1)
-
-        generations = range(self.config.max_generations)
-        pop_size = self.config.population_size
-
-        for col_idx, param_value in enumerate(param_values):
-            # Define loader function for this parameter
-            if strategy == 'pop':
-                def load_fn(seed, pv=param_value):
-                    data = {m: self.loader.load_pop_data(data_dir, m, pv, seed, theta_range)
-                            for m in ['cooperator_frequency', 'cost', 'social_welfare']}
-                    rows = {m: next(r for r in data[m] if abs(float(r['Theta']) - theta_value) < 0.01)
-                            for m in data}
-                    return (
-                        self.loader.get_metric_array(rows['cooperator_frequency'], 'cooperator_frequency'),
-                        self.loader.get_metric_array(rows['cost'], 'cost'),
-                        self.loader.get_metric_array(rows['social_welfare'], 'social_welfare')
-                    )
-                param_label = f'pc={param_value}'
-            else:  # neb
-                def load_fn(seed, pv=param_value):
-                    data = self.loader.load_neb_data(data_dir, int(pv))
-                    row = next(r for r in data if abs(float(r['Theta']) - theta_value) < 0.01)
-                    return (
-                        self.loader.get_metric_array(row, 'cooperator_frequency', is_neb=True),
-                        self.loader.get_metric_array(row, 'cost', is_neb=True),
-                        self.loader.get_metric_array(row, 'social_welfare', is_neb=True)
-                    )
-                param_label = f'nc={param_value}'
-
-            # Load multi-seed data
-            all_coop, all_cost, all_welfare = self._load_multiseed_timeseries(load_fn, seeds)
-
-            if len(all_coop) == 0:
-                print(f"Warning: No data for {param_label}, theta={theta_value}")
-                continue
-
-            # Compute stats
-            mean_coop = np.mean(all_coop, axis=0)
-            mean_cost = np.mean(all_cost, axis=0)
-            mean_welfare = np.mean(all_welfare, axis=0)
-
-            coop_pct = (mean_coop / pop_size) * 100
-            std_coop_pct = (np.std(all_coop, axis=0) / pop_size) * 100 if show_std else None
-            std_cost = np.std(all_cost, axis=0) if show_std else None
-            std_welfare = np.std(all_welfare, axis=0) if show_std else None
-
-            self._plot_timeseries_column(
-                axes[:, col_idx], generations, coop_pct, mean_cost, mean_welfare,
-                std_coop_pct, std_cost, std_welfare,
-                title=param_label,
-                is_first_col=(col_idx == 0),
-                is_last_col=(col_idx == n_cols - 1),
-                show_std=show_std
-            )
-
-        if output_filename is None:
-            output_filename = f"{data_dir}/{strategy}_grid_theta{theta_value}_seeds{seeds[0]}-{seeds[-1]}.png"
-
-        save_figure(fig, output_filename, self.config.dpi, show_plot)
-        return output_filename
-
     def _plot_heatmap(self, ax, data: np.ndarray, x_values: List[str], y_values: List[float],
                       title: str, xlabel: str, ylabel: str, colorbar_label: str):
         """Plot a single heatmap."""
@@ -403,97 +314,6 @@ class SimulationPlotter:
                         continue
 
         return {m: np.mean(all_data[m], axis=0) for m in metrics}
-
-    def plot_heatmap_grid(
-        self,
-        data_dir: str,
-        pc_values: List[str],
-        theta_values: List[float],
-        seeds: List[int],
-        theta_range: str = None,
-        output_filename: Optional[str] = None,
-        show_plot: bool = False
-    ) -> str:
-        """Plot heatmap grid for cooperation, cost, and welfare."""
-        metrics = ['cooperator_frequency', 'cost', 'social_welfare']
-        aggregation = {'cooperator_frequency': 'final', 'cost': 'sum', 'social_welfare': 'final'}
-        labels = {
-            'cooperator_frequency': 'Cooperation Frequency (%)',
-            'cost': 'Total Cost',
-            'social_welfare': 'Social Welfare'
-        }
-
-        print(f"Loading data for {len(seeds)} seeds × {len(theta_values)} theta × {len(pc_values)} pc...")
-        mean_data = self._load_multiseed_heatmap(data_dir, pc_values, theta_values, seeds, metrics, aggregation, theta_range)
-
-        fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-
-        for idx, metric in enumerate(metrics):
-            self._plot_heatmap(
-                axes[idx], mean_data[metric], pc_values, theta_values,
-                title=labels[metric], xlabel='$p_C / Z$', ylabel='$\\theta$',
-                colorbar_label='Value'
-            )
-
-        plt.tight_layout()
-
-        if output_filename is None:
-            output_filename = f"{data_dir}/heatmap_seeds{seeds[0]}-{seeds[-1]}.png"
-
-        save_figure(fig, output_filename, self.config.dpi, show_plot)
-        return output_filename
-
-    def plot_efficiency_comparison(
-        self,
-        data_dir: str,
-        pc_values: List[str],
-        seeds: List[int],
-        a_values: List[float] = [0.5, 0.75, 1.0, 1.5, 2.0],
-        theta_filter: Tuple[float, float] = (4.0, 5.0),
-        theta_range: str = None,
-        output_filename: Optional[str] = None,
-        show_plot: bool = False
-    ) -> str:
-        """Plot efficiency comparison across different 'a' values."""
-        all_theta = self.loader.get_theta_values(data_dir, pc_values[0], seeds[0], theta_range)
-        theta_values = [t for t in all_theta if theta_filter[0] <= t <= theta_filter[1]]
-
-        metrics = ['cooperator_frequency', 'cost', 'population_payoff']
-        aggregation = {m: 'final' for m in metrics}
-
-        print(f"Loading data for {len(seeds)} seeds × {len(theta_values)} theta × {len(pc_values)} pc...")
-        mean_data = self._load_multiseed_heatmap(data_dir, pc_values, theta_values, seeds, metrics, aggregation, theta_range)
-
-        base_cost_a1 = mean_data['cost']
-        base_payoff = mean_data['population_payoff']
-
-        fig, axes = plt.subplots(2, len(a_values), figsize=(6 * len(a_values), 10))
-
-        for a_idx, a in enumerate(a_values):
-            cost_a = base_cost_a1 / a
-            welfare_a = base_payoff - cost_a
-
-            self._plot_heatmap(
-                axes[0, a_idx], cost_a, pc_values, theta_values,
-                title=f'a = {a}', xlabel='$p_C / Z$',
-                ylabel='Total Cost\n\n$\\theta$' if a_idx == 0 else '$\\theta$',
-                colorbar_label='Cost'
-            )
-
-            self._plot_heatmap(
-                axes[1, a_idx], welfare_a, pc_values, theta_values,
-                title='', xlabel='$p_C / Z$',
-                ylabel='Social Welfare\n\n$\\theta$' if a_idx == 0 else '$\\theta$',
-                colorbar_label='Welfare'
-            )
-
-        plt.tight_layout()
-
-        if output_filename is None:
-            output_filename = f"{data_dir}/efficiency_comparison_seeds{seeds[0]}-{seeds[-1]}.png"
-
-        save_figure(fig, output_filename, self.config.dpi, show_plot)
-        return output_filename
 
     def plot_timeseries_from_agg(
         self,
@@ -653,54 +473,6 @@ class SimulationPlotter:
         if title:
             fig.suptitle(title, fontsize=14, y=1.02)
 
-        plt.tight_layout()
-
-        if output_filename:
-            save_figure(fig, output_filename, self.config.dpi, show_plot)
-        else:
-            plt.show()
-
-        return output_filename
-
-    def plot_heatmap_from_agg(
-        self,
-        data_matrix: np.ndarray,
-        strategy_params: List[str],
-        theta_values: List[float],
-        metric: str,
-        title: str = '',
-        output_filename: Optional[str] = None,
-        show_plot: bool = False
-    ) -> str:
-        """
-        Plot heatmap from pre-aggregated final values.
-
-        Args:
-            data_matrix: 2D array [theta_idx, param_idx]
-            strategy_params: List of strategy param labels
-            theta_values: List of theta values
-            metric: Metric name for labeling
-            title: Plot title
-        """
-        fig, ax = plt.subplots(figsize=(8, 6))
-
-        im = ax.imshow(data_matrix, aspect='auto', cmap=self.config.color_map, origin='lower', interpolation=self.config.color_interp)
-
-        ax.set_xticks(range(len(strategy_params)))
-        ax.set_xticklabels([sp.split('=')[1] for sp in strategy_params])
-
-        # Show subset of theta ticks for readability
-        n_ticks = min(11, len(theta_values))
-        tick_step = max(1, len(theta_values) // n_ticks)
-        ax.set_yticks(range(0, len(theta_values), tick_step))
-        ax.set_yticklabels([f"{theta_values[i]:.1f}" for i in range(0, len(theta_values), tick_step)])
-
-        param_name = 'p_C' if 'pc' in strategy_params[0] else 'n_C'
-        ax.set_xlabel(param_name, fontsize=self.config.label_fontsize)
-        ax.set_ylabel('θ', fontsize=self.config.label_fontsize)
-        ax.set_title(title or metric.replace('_', ' ').title(), fontsize=self.config.title_fontsize, fontweight='bold')
-
-        plt.colorbar(im, ax=ax)
         plt.tight_layout()
 
         if output_filename:
