@@ -21,3 +21,8 @@ parallel -j 20 python main.py --strategy neb --game-type pgg --nc {1} --r {2} --
 FileNotFoundError: [Errno 2] No such file or directory: 'data/pop_theta/seed_0_pc=0.75_cooperator_frequency.csv'
  
 Go result is basically the same as Py result :)
+
+2026-01-18
+
+- deterministic result
+- standardise figures styles -- change heatmap figure to the other format
