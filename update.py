@@ -10,16 +10,20 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import pandas as pd
 
-def update_population(population, fitnesses, K=0.3):
+def get_fittest_neighbor(neighbors, fitnesses):
+    best_pos = neighbors[0]
+    for pos in neighbors[1:]:
+        if fitnesses[pos] > fitnesses[best_pos]:
+            best_pos = pos
+    return best_pos
+
+def update_population(population, fitnesses, K=0.3, deterministic=False):
     new_population = population.copy()
 
     (size_x, size_y) = population.shape
 
     for i in range(size_x):
         for j in range(size_y):
-            focal_strategy = population[i, j]
-            focal_fitness = fitnesses[i, j]
-
             neighbors = []
             if i > 0:
                 neighbors.append((i - 1, j))
@@ -33,15 +37,20 @@ def update_population(population, fitnesses, K=0.3):
             if not neighbors:
                 continue
 
-            neighbor_pos = random.choice(neighbors)
-            neighbor_strategy = population[neighbor_pos]
-            neighbor_fitness = fitnesses[neighbor_pos]
+            if deterministic:
+                neighbor_pos = get_fittest_neighbor(neighbors, fitnesses)
+                new_population[i, j] = population[neighbor_pos]
+            else:
+                focal_fitness = fitnesses[i, j]
+                neighbor_pos = random.choice(neighbors)
+                neighbor_strategy = population[neighbor_pos]
+                neighbor_fitness = fitnesses[neighbor_pos]
 
-            prob = fermi(focal_fitness, neighbor_fitness, K)
+                prob = fermi(focal_fitness, neighbor_fitness, K)
 
-            if random.random() < prob:
-                new_population[i, j] = neighbor_strategy
-    
+                if random.random() < prob:
+                    new_population[i, j] = neighbor_strategy
+
     return new_population
 
 def simulate_population(size_x=100, size_y=100, generations=50, a=1, b=0,
@@ -49,7 +58,8 @@ def simulate_population(size_x=100, size_y=100, generations=50, a=1, b=0,
                         strategy='neb-i', pc=0.25, nc=4, theta=5.5, epsilon=4.5,
                         game_type='pd', r=3.0,
                         save_figures=False, show_final_population=False,
-                        save_data=False, figure_path='fig', data_path='data'):
+                        save_data=False, figure_path='fig', data_path='data',
+                        deterministic=False):
     if payoff_matrix is None:
         payoff_matrix = {
             'C': {'C': 1, 'D': 0},
@@ -89,7 +99,7 @@ def simulate_population(size_x=100, size_y=100, generations=50, a=1, b=0,
         history_fitnesses.append(total_fitness)
         history_social_welfare.append(total_fitness - cost)
 
-        population = update_population(population, fitnesses, K=0.3)
+        population = update_population(population, fitnesses, K=0.3, deterministic=deterministic)
 
     if save_figures:
         path = f'{figure_path}/{game_type}-a={a}-{strategy}'
@@ -144,6 +154,8 @@ def simulate_population(size_x=100, size_y=100, generations=50, a=1, b=0,
             save_data_path += f'-{epsilon}'
         if game_type == 'pgg':
             save_data_path += f'-r={r}'
+        if deterministic:
+            save_data_path += '-det'
         data = pd.DataFrame({
             'Cooperator Count': history_frequency,
             'Interference Cost': history_cost,

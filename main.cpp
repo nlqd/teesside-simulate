@@ -260,7 +260,17 @@ std::pair<Fitnesses, double> neb(const std::string& mode, const Population& popu
     return {fitnesses, cost};
 }
 
-Population updatePopulation(const Population& population, const Fitnesses& fitnesses, double K, std::mt19937& rng) {
+Coord getFittestNeighbor(const std::vector<Coord>& neighbors, const Fitnesses& fitnesses) {
+    Coord bestPos = neighbors[0];
+    for (size_t k = 1; k < neighbors.size(); k++) {
+        if (fitnesses[neighbors[k].x][neighbors[k].y] > fitnesses[bestPos.x][bestPos.y]) {
+            bestPos = neighbors[k];
+        }
+    }
+    return bestPos;
+}
+
+Population updatePopulation(const Population& population, const Fitnesses& fitnesses, double K, std::mt19937& rng, bool deterministic) {
     Population newPop = copyPopulation(population);
     int sizeX = population.size();
     int sizeY = population[0].size();
@@ -268,19 +278,24 @@ Population updatePopulation(const Population& population, const Fitnesses& fitne
 
     for (int i = 0; i < sizeX; i++) {
         for (int j = 0; j < sizeY; j++) {
-            double focalFitness = fitnesses[i][j];
             auto neighbors = getNeighbors(i, j, sizeX, sizeY);
 
             if (neighbors.empty()) continue;
 
-            std::uniform_int_distribution<int> idxDist(0, neighbors.size() - 1);
-            Coord neighborPos = neighbors[idxDist(rng)];
-            double neighborFitness = fitnesses[neighborPos.x][neighborPos.y];
-
-            double prob = fermi(focalFitness, neighborFitness, K);
-
-            if (dist(rng) < prob) {
+            if (deterministic) {
+                Coord neighborPos = getFittestNeighbor(neighbors, fitnesses);
                 newPop[i][j] = population[neighborPos.x][neighborPos.y];
+            } else {
+                double focalFitness = fitnesses[i][j];
+                std::uniform_int_distribution<int> idxDist(0, neighbors.size() - 1);
+                Coord neighborPos = neighbors[idxDist(rng)];
+                double neighborFitness = fitnesses[neighborPos.x][neighborPos.y];
+
+                double prob = fermi(focalFitness, neighborFitness, K);
+
+                if (dist(rng) < prob) {
+                    newPop[i][j] = population[neighborPos.x][neighborPos.y];
+                }
             }
         }
     }
@@ -302,7 +317,8 @@ SimulationResult simulatePopulation(
     double initialCooperatorRatio, double beta,
     const std::string& strategy, double pc, int nc, double theta, double epsilon,
     const std::string& gameType, double r,
-    std::mt19937& rng
+    std::mt19937& rng,
+    bool deterministic
 ) {
     Population population = newPopulation(sizeX, sizeY, initialCooperatorRatio, rng);
 
@@ -355,7 +371,7 @@ SimulationResult simulatePopulation(
         historyFitness.push_back(totalFitness);
         historySocialWelfare.push_back(totalFitness - cost);
 
-        population = updatePopulation(population, fitnesses, 0.3, rng);
+        population = updatePopulation(population, fitnesses, 0.3, rng, deterministic);
     }
 
     return {population, historyFrequency, historyFitness, historyCost, historySocialWelfare};
@@ -441,6 +457,7 @@ int main(int argc, char* argv[]) {
     double thetaStep = std::stod(getArg(argc, argv, "theta-step", "0.1"));
     std::string outputDir = getArg(argc, argv, "output-dir", "data_cpp");
     double beta = std::stod(getArg(argc, argv, "beta", "1.8"));
+    bool deterministic = getArg(argc, argv, "deterministic", "false") == "true";
 
     auto thetaList = arange(thetaStart, thetaEnd, thetaStep);
 
@@ -460,7 +477,8 @@ int main(int argc, char* argv[]) {
                 0.5, beta,
                 strategy, pc, nc, theta, 4.5,
                 gameType, r,
-                rng
+                rng,
+                deterministic
             );
 
             std::string seedStr = std::to_string(seed);
@@ -504,6 +522,9 @@ int main(int argc, char* argv[]) {
         std::string thetaRangeStr = thetaRangeOss.str();
 
         std::string filePrefix = dataDir + "/seed_" + std::to_string(seed) + "_" + thetaRangeStr + "_" + paramStr;
+        if (deterministic) {
+            filePrefix += "_det";
+        }
 
         writeCSV(filePrefix + "_cooperator_frequency.csv", {"Seed", "Theta", "A", "Cooperator_Frequency"}, resFreq);
         writeCSV(filePrefix + "_social_welfare.csv", {"Seed", "Theta", "A", "Social_Welfare"}, resSocialWelfare);

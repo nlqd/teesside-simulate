@@ -277,27 +277,42 @@ func neb(mode string, population Population, fitnesses Fitnesses, nc int, epsilo
 	return fitnesses, cost
 }
 
-func updatePopulation(population Population, fitnesses Fitnesses, K float64, rng *rand.Rand) Population {
+func getFittestNeighbor(neighbors [][2]int, fitnesses Fitnesses) [2]int {
+	bestPos := neighbors[0]
+	for _, n := range neighbors[1:] {
+		if fitnesses[n[0]][n[1]] > fitnesses[bestPos[0]][bestPos[1]] {
+			bestPos = n
+		}
+	}
+	return bestPos
+}
+
+func updatePopulation(population Population, fitnesses Fitnesses, K float64, rng *rand.Rand, deterministic bool) Population {
 	newPop := population.copy()
 	sizeX := len(population)
 	sizeY := len(population[0])
 
 	for i := 0; i < sizeX; i++ {
 		for j := 0; j < sizeY; j++ {
-			focalFitness := fitnesses[i][j]
 			neighbors := getNeighbors(i, j, sizeX, sizeY)
 
 			if len(neighbors) == 0 {
 				continue
 			}
 
-			neighborPos := neighbors[rng.Intn(len(neighbors))]
-			neighborFitness := fitnesses[neighborPos[0]][neighborPos[1]]
-
-			prob := fermi(focalFitness, neighborFitness, K)
-
-			if rng.Float64() < prob {
+			if deterministic {
+				neighborPos := getFittestNeighbor(neighbors, fitnesses)
 				newPop[i][j] = population[neighborPos[0]][neighborPos[1]]
+			} else {
+				focalFitness := fitnesses[i][j]
+				neighborPos := neighbors[rng.Intn(len(neighbors))]
+				neighborFitness := fitnesses[neighborPos[0]][neighborPos[1]]
+
+				prob := fermi(focalFitness, neighborFitness, K)
+
+				if rng.Float64() < prob {
+					newPop[i][j] = population[neighborPos[0]][neighborPos[1]]
+				}
 			}
 		}
 	}
@@ -320,6 +335,7 @@ func simulatePopulation(
 	strategy string, pc float64, nc int, theta, epsilon float64,
 	gameType string, r float64,
 	rng *rand.Rand,
+	deterministic bool,
 ) SimulationResult {
 	population := newPopulation(sizeX, sizeY, initialCooperatorRatio, rng)
 
@@ -360,7 +376,7 @@ func simulatePopulation(
 		historyFitness = append(historyFitness, totalFitness)
 		historySocialWelfare = append(historySocialWelfare, totalFitness-cost)
 
-		population = updatePopulation(population, fitnesses, 0.3, rng)
+		population = updatePopulation(population, fitnesses, 0.3, rng, deterministic)
 	}
 
 	return SimulationResult{
@@ -437,6 +453,7 @@ func main() {
 	thetaStep := flag.Float64("theta-step", 0.1, "Theta step size")
 	outputDir := flag.String("output-dir", "data_go", "Output directory for CSV files")
 	beta := flag.Float64("beta", 1.8, "Beta value for Prisoner's Dilemma payoff matrix")
+	deterministic := flag.Bool("deterministic", false, "Use deterministic update rule (pick fittest neighbor)")
 
 	flag.Parse()
 
@@ -459,6 +476,7 @@ func main() {
 				*strategy, *pc, *nc, theta, 4.5,
 				*gameType, *r,
 				rng,
+				*deterministic,
 			)
 
 			freqStr := "[" + strings.Join(intSliceToStrings(result.HistoryFrequency), ", ") + "]"
@@ -504,6 +522,9 @@ func main() {
 
 		thetaRangeStr := fmt.Sprintf("theta_%.1f-%.1f", *thetaStart, *thetaEnd)
 		filePrefix := fmt.Sprintf("%s/seed_%d_%s_%s", dataDir, seed, thetaRangeStr, paramStr)
+		if *deterministic {
+			filePrefix += "_det"
+		}
 
 		headers := []string{"Seed", "Theta", "A", "Cooperator_Frequency"}
 		if err := writeCSV(filePrefix+"_cooperator_frequency.csv", headers, resFreq); err != nil {

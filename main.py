@@ -52,6 +52,7 @@ def __main__():
     parser.add_argument('--r', type=float, default=3.0, help='Multiplication factor for Public Goods Game')
     parser.add_argument('--seed-start', type=int, default=0, help='Starting seed for simulations')
     parser.add_argument('--seed-end', type=int, default=10, help='Ending seed for simulations')
+    parser.add_argument('--deterministic', action='store_true', help='Use deterministic update rule (pick fittest neighbor)')
 
     args = parser.parse_args()
     strategy = args.strategy
@@ -62,6 +63,7 @@ def __main__():
     r = args.r
     seed_start = args.seed_start
     seed_end = args.seed_end
+    deterministic = args.deterministic
 
     # Generate theta run for POP
     # Run with different seed
@@ -82,7 +84,8 @@ def __main__():
             final_population, history_frequency, history_fitness, history_cost, history_social_welfare = simulate_population(
                 a=a, generations=250, strategy=strategy, nc=nc, pc=pc, theta=theta,
                 beta=b, game_type=game_type, r=r,
-                save_figures=False, show_final_population=False, save_data=False)
+                save_figures=False, show_final_population=False, save_data=False,
+                deterministic=deterministic)
 
             res_freq.append((seed, theta, a, [int(x) for x in history_frequency]))
             res_social_welfare.append((seed, theta, a, [float(x) for x in history_social_welfare]))
@@ -108,6 +111,9 @@ def __main__():
 
         os.makedirs(data_dir, exist_ok=True)
 
+        file_prefix = f'{data_dir}/seed_{seed}_theta_4.0-5.0_{param_str}'
+        if deterministic:
+            file_prefix += '_det'
 
         df = pd.DataFrame(res_freq, columns=['Seed', 'Theta', 'A', 'Cooperator_Frequency'])
         df.to_csv(f'{file_prefix}_cooperator_frequency.csv', index=False)
