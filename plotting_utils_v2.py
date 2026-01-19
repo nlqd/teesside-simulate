@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import re
+import os
 from typing import List, Dict, Tuple, Optional, Any, Callable
 from dataclasses import dataclass
 
@@ -103,11 +104,15 @@ class DataLoader:
     @classmethod
     def load_metric_data(cls, data_dir: str, metric: str, param_value: str, seed: int,
                          param_name: str = 'pc', theta_range: str = None) -> List[Dict[str, Any]]:
-        """Load metric data with flexible param_name (pc or nc)."""
+        """Load metric data with flexible param_name (pc or nc). Auto-detects _det suffix."""
         if theta_range:
             filepath = f"{data_dir}/seed_{seed}_theta_{theta_range}_{param_name}={param_value}_{metric}.csv"
+            if not os.path.exists(filepath):
+                filepath = f"{data_dir}/seed_{seed}_theta_{theta_range}_{param_name}={param_value}_det_{metric}.csv"
         else:
             filepath = f"{data_dir}/seed_{seed}_{param_name}={param_value}_{metric}.csv"
+            if not os.path.exists(filepath):
+                filepath = f"{data_dir}/seed_{seed}_{param_name}={param_value}_det_{metric}.csv"
         return cls.load_csv(filepath)
 
     @classmethod
