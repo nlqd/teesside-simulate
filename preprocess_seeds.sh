@@ -44,15 +44,15 @@ python preprocess_seeds.py --data-dir 'data_cpp/neb_theta_pd_b=2.0' --output-dir
 # deterministic go
 python preprocess_seeds.py --data-dir  'data_deterministic_go/pop_theta_pd_b=1.2'  --output-dir data_agg_det_go &
 python preprocess_seeds.py --data-dir  'data_deterministic_go/pop_theta_pd_b=1.8'  --output-dir data_agg_det_go &
-python preprocess_seeds.py --data-dir  'data_deterministic_go/pop_theta_pd_b=2'    --output-dir data_agg_det_go &
+python preprocess_seeds.py --data-dir  'data_deterministic_go/pop_theta_pd_b=2.0'  --output-dir data_agg_det_go &
 python preprocess_seeds.py --data-dir  'data_deterministic_go/pop_theta_pgg_r=1.5' --output-dir data_agg_det_go &
-python preprocess_seeds.py --data-dir  'data_deterministic_go/pop_theta_pgg_r=3'   --output-dir data_agg_det_go &
+python preprocess_seeds.py --data-dir  'data_deterministic_go/pop_theta_pgg_r=3.0' --output-dir data_agg_det_go &
 python preprocess_seeds.py --data-dir  'data_deterministic_go/pop_theta_pgg_r=4.5' --output-dir data_agg_det_go &
 python preprocess_seeds.py --data-dir  'data_deterministic_go/neb_theta_pd_b=1.2'  --output-dir data_agg_det_go &
 python preprocess_seeds.py --data-dir  'data_deterministic_go/neb_theta_pd_b=1.8'  --output-dir data_agg_det_go &
-python preprocess_seeds.py --data-dir  'data_deterministic_go/neb_theta_pd_b=2'    --output-dir data_agg_det_go &
+python preprocess_seeds.py --data-dir  'data_deterministic_go/neb_theta_pd_b=2.0'  --output-dir data_agg_det_go &
 python preprocess_seeds.py --data-dir  'data_deterministic_go/neb_theta_pgg_r=1.5' --output-dir data_agg_det_go &
-python preprocess_seeds.py --data-dir  'data_deterministic_go/neb_theta_pgg_r=3'   --output-dir data_agg_det_go &
+python preprocess_seeds.py --data-dir  'data_deterministic_go/neb_theta_pgg_r=3.0' --output-dir data_agg_det_go &
 python preprocess_seeds.py --data-dir  'data_deterministic_go/neb_theta_pgg_r=4.5' --output-dir data_agg_det_go &
 
 wait
