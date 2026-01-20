@@ -460,7 +460,7 @@ class SimulationPlotter:
             ax_cost.set_yticks(range(0, len(theta_values), tick_step))
             ax_cost.set_yticklabels([f"{theta_values[i]:.1f}" for i in range(0, len(theta_values), tick_step)], fontsize=8)
             if col_idx == 0:
-                ax_cost.set_ylabel('Cost\n\nθ', fontsize=self.config.label_fontsize)
+                ax_cost.set_ylabel('Total Cost\n\nθ', fontsize=self.config.label_fontsize)
             plt.colorbar(im_cost, ax=ax_cost)
 
             # Row 1: Social Welfare

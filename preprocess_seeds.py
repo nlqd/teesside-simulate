@@ -50,6 +50,19 @@ def load_agg_final(agg_dir, game_type, strategy, game_param, strategy_param, met
     }
 
 
+def load_agg_total(agg_dir, game_type, strategy, game_param, strategy_param, metric):
+    """Load sum of timeseries values (total across all generations).
+
+    Returns:
+        dict: {theta: {'mean': float, 'std': float}}
+    """
+    data = load_agg(agg_dir, game_type, strategy, game_param, strategy_param, metric)
+    return {
+        theta: {'mean': sum(v['mean']), 'std': sum(v['std'])}
+        for theta, v in data.items()
+    }
+
+
 def parse_path_metadata(data_dir):
     """Extract game_type, strategy, and game params from directory path."""
     path = data_dir.rstrip('/')

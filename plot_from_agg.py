@@ -1,5 +1,5 @@
 """CLI for plotting from preprocessed aggregated data."""
-from preprocess_seeds import load_agg, load_agg_final
+from preprocess_seeds import load_agg, load_agg_final, load_agg_total
 from plotting_utils_v2 import SimulationPlotter
 import numpy as np
 import argparse
@@ -60,13 +60,30 @@ def build_heatmap_matrix(agg_dir, game_type, strategy, game_param, strategy_para
     return data_matrix, thetas
 
 
+def build_total_cost_matrix(agg_dir, game_type, strategy, game_param, strategy_params):
+    """Build total cost matrix (sum across all generations)."""
+    first_sp = strategy_params[0]
+    first_data = load_agg_total(agg_dir, game_type, strategy, game_param, first_sp, 'cost')
+    thetas = sorted(first_data.keys())
+
+    data_matrix = np.zeros((len(thetas), len(strategy_params)))
+
+    for sp_idx, sp in enumerate(strategy_params):
+        total_data = load_agg_total(agg_dir, game_type, strategy, game_param, sp, 'cost')
+        for theta_idx, theta in enumerate(thetas):
+            if theta in total_data:
+                data_matrix[theta_idx, sp_idx] = total_data[theta]['mean']
+
+    return data_matrix, thetas
+
+
 def build_efficiency_matrices(agg_dir, game_type, strategy, game_param, strategy_params):
     """Build cost and base welfare matrices for efficiency comparison."""
-    # Get cost
-    cost_matrix, thetas = build_heatmap_matrix(
-        agg_dir, game_type, strategy, game_param, strategy_params, 'cost', population_size=1
+    # Get total cost (sum across all generations)
+    cost_matrix, thetas = build_total_cost_matrix(
+        agg_dir, game_type, strategy, game_param, strategy_params
     )
-    # Get social welfare
+    # Get social welfare (final value)
     welfare_matrix, _ = build_heatmap_matrix(
         agg_dir, game_type, strategy, game_param, strategy_params, 'social_welfare', population_size=1
     )
@@ -79,9 +96,9 @@ def build_efficiency_matrices(agg_dir, game_type, strategy, game_param, strategy
 
 def build_diff_matrices(agg_dir, game_type, strategy, game_param, strategy_params):
     """Build cost, welfare_base and cooperator frequency matrices for diff line plot comparison."""
-    # Get cost (final value)
-    cost_matrix, thetas = build_heatmap_matrix(
-        agg_dir, game_type, strategy, game_param, strategy_params, 'cost', population_size=1
+    # Get total cost (sum across all generations)
+    cost_matrix, thetas = build_total_cost_matrix(
+        agg_dir, game_type, strategy, game_param, strategy_params
     )
     # Get social welfare (final value)
     welfare_matrix, _ = build_heatmap_matrix(
