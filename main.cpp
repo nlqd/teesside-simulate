@@ -284,7 +284,9 @@ Population updatePopulation(const Population& population, const Fitnesses& fitne
 
             if (deterministic) {
                 Coord neighborPos = getFittestNeighbor(neighbors, fitnesses);
-                newPop[i][j] = population[neighborPos.x][neighborPos.y];
+                if (fitnesses[neighborPos.x][neighborPos.y] > fitnesses[i][j]) {
+                    newPop[i][j] = population[neighborPos.x][neighborPos.y];
+                }
             } else {
                 double focalFitness = fitnesses[i][j];
                 std::uniform_int_distribution<int> idxDist(0, neighbors.size() - 1);

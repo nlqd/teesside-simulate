@@ -38,8 +38,13 @@ def update_population(population, fitnesses, K=0.3, deterministic=False):
                 continue
 
             if deterministic:
+                # https://www.nature.com/articles/359826a0: each site is
+                # occupied either by its original owner or by one of the
+                # neighbours, depending on who scores the highest total in that
+                # round
                 neighbor_pos = get_fittest_neighbor(neighbors, fitnesses)
-                new_population[i, j] = population[neighbor_pos]
+                if fitnesses[neighbor_pos] > fitnesses[i, j]:
+                    new_population[i, j] = population[neighbor_pos]
             else:
                 focal_fitness = fitnesses[i, j]
                 neighbor_pos = random.choice(neighbors)

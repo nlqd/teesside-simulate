@@ -302,7 +302,9 @@ func updatePopulation(population Population, fitnesses Fitnesses, K float64, rng
 
 			if deterministic {
 				neighborPos := getFittestNeighbor(neighbors, fitnesses)
-				newPop[i][j] = population[neighborPos[0]][neighborPos[1]]
+				if fitnesses[neighborPos[0]][neighborPos[1]] > fitnesses[i][j] {
+					newPop[i][j] = population[neighborPos[0]][neighborPos[1]]
+				}
 			} else {
 				focalFitness := fitnesses[i][j]
 				neighborPos := neighbors[rng.Intn(len(neighbors))]
