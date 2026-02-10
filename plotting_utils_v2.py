@@ -466,7 +466,8 @@ class SimulationPlotter:
             # Row 1: Social Welfare
             ax_welfare = axes[1, col_idx]
             im_welfare = ax_welfare.imshow(welfare_a, aspect='auto', cmap=self.config.color_map, origin='lower', interpolation=self.config.color_interp)
-            ax_welfare.set_xlabel('p_C', fontsize=self.config.label_fontsize)
+            is_neb = strategy_params[0].startswith('nc')
+            ax_welfare.set_xlabel('$n_C$' if is_neb else '$p_C$', fontsize=self.config.label_fontsize)
             ax_welfare.set_xticks(range(len(strategy_params)))
             ax_welfare.set_xticklabels([sp.split('=')[1] for sp in strategy_params], fontsize=8)
             ax_welfare.set_yticks(range(0, len(theta_values), tick_step))
@@ -641,10 +642,10 @@ class SimulationPlotter:
 
         handles, labels = axes[0][0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1))
-        
+
         if title:
             fig.suptitle(title, fontsize=14, y=1.05)
-        
+
         plt.tight_layout()
 
         if output_filename:
@@ -653,3 +654,133 @@ class SimulationPlotter:
             plt.show()
 
         return output_filename
+
+    def plot_optimal_theta_summary(
+        self,
+        optimal_sw: Dict[float, Dict[str, Dict[str, Dict[str, Dict[str, float]]]]],
+        optimal_cost: Dict[float, Dict[str, Dict[str, Dict[str, Dict[str, float]]]]],
+        a_values: List[float],
+        title: str = '',
+        output_filename: Optional[str] = None,
+        show_plot: bool = False
+    ):
+        """
+        Plot grid showing θ* vs strategy params. Scatter only (no lines).
+        Filled markers = SW optimal, hollow markers = Cost optimal.
+        Rows = a values, Columns = game × strategy.
+
+        Args:
+            optimal_sw: {a: {game: {strategy: {game_param: {sp: theta_star}}}}}
+            optimal_cost: same structure but for cost
+            a_values: List of efficiency values
+        """
+        game_labels = {'pd': 'PD', 'pgg': 'PGG'}
+        strategy_labels = {'pop': 'POP', 'neb': 'NEB'}
+        game_param_display = {
+            'pd': ['β=1.2', 'β=1.8', 'β=2.0'],
+            'pgg': ['r=1.5', 'r=3.0', 'r=4.5'],
+        }
+
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+        markers = ['o', 's', '^']
+
+        games = sorted(optimal_sw[a_values[0]].keys())
+        output_files = []
+
+        for game in games:
+            n_rows = len(a_values)
+            fig, axes = plt.subplots(n_rows, 2, figsize=(10, 4 * n_rows))
+            if n_rows == 1:
+                axes = axes[np.newaxis, :]
+
+            for row_idx, a in enumerate(a_values):
+                for col, strategy in enumerate(['pop', 'neb']):
+                    ax = axes[row_idx, col]
+                    sw_strat = optimal_sw.get(a, {}).get(game, {}).get(strategy, {})
+                    cost_strat = optimal_cost.get(a, {}).get(game, {}).get(strategy, {})
+
+                    if not sw_strat:
+                        ax.text(0.5, 0.5, 'No data', ha='center', va='center', transform=ax.transAxes)
+                        continue
+
+                    # Spread annotations per game_param index to avoid overlap
+                    sw_offsets = [(-18, 8), (5, 8), (12, -10)]
+                    cost_offsets = [(-18, -12), (5, -12), (12, 4)]
+
+                    for idx, game_param in enumerate(sorted(sw_strat.keys())):
+                        sp_data_sw = sw_strat[game_param]
+                        sp_data_cost = cost_strat.get(game_param, {})
+
+                        sp_vals = sorted(sp_data_sw.keys(), key=lambda x: float(x.split('=')[1]))
+                        x_vals = [float(sp.split('=')[1]) for sp in sp_vals]
+                        y_sw = [sp_data_sw[sp] for sp in sp_vals]
+
+                        color = colors[idx % len(colors)]
+                        marker = markers[idx % len(markers)]
+                        sw_off = sw_offsets[idx % len(sw_offsets)]
+                        cost_off = cost_offsets[idx % len(cost_offsets)]
+
+                        for sp_i, sp in enumerate(sp_vals):
+                            x = x_vals[sp_i]
+                            theta_sw = y_sw[sp_i]
+                            cost_info = sp_data_cost.get(sp, {})
+                            feasible = cost_info.get('feasible', True)
+
+                            if not feasible:
+                                continue
+
+                            # SW point (filled)
+                            ax.scatter([x], [theta_sw], marker=marker, color=color, s=60, zorder=3)
+                            ax.annotate(f'{theta_sw:.1f}', (x, theta_sw),
+                                        textcoords='offset points', xytext=sw_off,
+                                        fontsize=5.5, color=color)
+
+                            # Cost point (hollow)
+                            theta_c = cost_info.get('theta', 0)
+                            ax.scatter([x], [theta_c], marker=marker, facecolors='none',
+                                       edgecolors=color, s=60, linewidths=1.5, zorder=3)
+                            ax.annotate(f'{theta_c:.1f}', (x, theta_c),
+                                        textcoords='offset points', xytext=cost_off,
+                                        fontsize=5.5, color=color)
+
+                    ax.set_xlabel('$p_C$' if strategy == 'pop' else '$n_C$', fontsize=self.config.label_fontsize)
+                    ax.set_xticks(x_vals)
+                    ax.grid(True, alpha=0.3)
+                    ax.autoscale(axis='y')
+                    y_min, y_max = ax.get_ylim()
+                    margin = (y_max - y_min) * 0.15
+                    ax.set_ylim(y_min - margin, y_max + margin)
+
+                    if col == 0:
+                        ax.set_ylabel(f'a={a}\nθ*', fontsize=self.config.label_fontsize)
+                    if row_idx == 0:
+                        ax.set_title(strategy_labels[strategy],
+                                     fontsize=self.config.title_fontsize, fontweight='bold')
+
+            from matplotlib.lines import Line2D
+            legend_handles = []
+            for idx, param_label in enumerate(game_param_display[game]):
+                legend_handles.append(Line2D([0], [0], marker=markers[idx], color='w',
+                                             markerfacecolor=colors[idx], markersize=8,
+                                             label=param_label))
+            legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                         markerfacecolor='gray', markersize=8, label='Filled = SW'))
+            legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                         markerfacecolor='none', markeredgecolor='gray',
+                                         markeredgewidth=1.5, markersize=8, label='Hollow = Cost'))
+            fig.legend(handles=legend_handles, loc='upper center', ncol=5,
+                       bbox_to_anchor=(0.5, 1.0), fontsize=10, frameon=True)
+
+            game_title = f'{title} — {game_labels[game]}' if title else game_labels[game]
+            fig.suptitle(game_title, fontsize=14, fontweight='bold', y=1.05)
+            plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+            if output_filename:
+                base, ext = os.path.splitext(output_filename)
+                out = f'{base}_{game}{ext}'
+                save_figure(fig, out, self.config.dpi, show_plot)
+                output_files.append(out)
+            else:
+                plt.show()
+
+        return output_files
