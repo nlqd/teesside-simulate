@@ -553,6 +553,7 @@ class SimulationPlotter:
 
             axes[i].plot(sorted(theta_values), (cost_nc3_to_compare - min(cost_nc3_to_compare))/(max(cost_nc3_to_compare) - min(cost_nc3_to_compare)), color='red', label='Total Cost')
             axes[i].plot(sorted(theta_values), (sw_nc3_to_compare - min(sw_nc3_to_compare))/(max(sw_nc3_to_compare) - min(sw_nc3_to_compare)), label='Social Welfare')
+            axes[i].axhline(0.9, color='gray', linestyle=':', alpha=0.5, label='>90% coop')
             axes[i].axhline(0.9, xmin=(0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), xmax=(coef*(sw_nc3_max-cost_nc3_min)+0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), color ='green', linestyle='--')
             axes[i].axvline(cost_nc3_min, linestyle='--', color='red')
             axes[i].axvline(sw_nc3_max, linestyle='--')
@@ -571,7 +572,7 @@ class SimulationPlotter:
             axes[i].set_title(f'{strategy_params[len(strategy_params) - 1]}, a={a}', fontsize=self.config.title_fontsize, fontweight='bold')
 
         handles, labels = axes[0].get_legend_handles_labels()
-        fig.legend(handles, labels, loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1))
+        fig.legend(handles, labels, loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1))
         
         if title:
             fig.suptitle(title, fontsize=14, y=1.05)
@@ -624,6 +625,7 @@ class SimulationPlotter:
 
                 axes[i][j].plot(sorted(theta_values), (cost_nc3_to_compare - min(cost_nc3_to_compare))/(max(cost_nc3_to_compare) - min(cost_nc3_to_compare)), color='red', label='Total Cost')
                 axes[i][j].plot(sorted(theta_values), (sw_nc3_to_compare - min(sw_nc3_to_compare))/(max(sw_nc3_to_compare) - min(sw_nc3_to_compare)), label='Social Welfare')
+                axes[i][j].axhline(0.9, color='gray', linestyle=':', alpha=0.5, label='>90% coop')
                 axes[i][j].axhline(0.9, xmin=(0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), xmax=(coef*(sw_nc3_max-cost_nc3_min)+0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), color ='green', linestyle='--')
                 axes[i][j].axvline(cost_nc3_min, linestyle='--', color='red')
                 axes[i][j].axvline(sw_nc3_max, linestyle='--')
@@ -641,7 +643,7 @@ class SimulationPlotter:
                 axes[i][j].set_title(f'{strategy_params[len(strategy_params) - 2 + i]}, a={a}', fontsize=self.config.title_fontsize, fontweight='bold')
 
         handles, labels = axes[0][0].get_legend_handles_labels()
-        fig.legend(handles, labels, loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1))
+        fig.legend(handles, labels, loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1))
 
         if title:
             fig.suptitle(title, fontsize=14, y=1.05)
