@@ -191,6 +191,8 @@ def setup_timeseries_ax(ax, generations, y_data, color: str, ylabel: str = None,
 def save_figure(fig, output_path: str, dpi: int = 300, show: bool = False, message: str = None):
     """Save figure, print message, optionally show, then close."""
     plt.savefig(output_path, dpi=dpi, bbox_inches='tight')
+    import subprocess
+    subprocess.run(['mogrify', '-resize', '1920x1920>', '-quality', '90', output_path], check=True)
     if message:
         print(message)
     else:
@@ -679,7 +681,7 @@ class SimulationPlotter:
         game_labels = {'pd': 'PD', 'pgg': 'PGG'}
         strategy_labels = {'pop': 'POP', 'neb': 'NEB'}
         game_param_display = {
-            'pd': ['β=1.2', 'β=1.8', 'β=2.0'],
+            'pd': ['b=1.2', 'b=1.8', 'b=2.0'],
             'pgg': ['r=1.5', 'r=3.0', 'r=4.5'],
         }
 
@@ -757,7 +759,7 @@ class SimulationPlotter:
                         ax.set_ylabel(f'a={a}\nθ*', fontsize=self.config.label_fontsize)
                     if row_idx == 0:
                         ax.set_title(strategy_labels[strategy],
-                                     fontsize=self.config.title_fontsize, fontweight='bold')
+                                     fontsize=self.config.title_fontsize)
 
             from matplotlib.lines import Line2D
             legend_handles = []
@@ -774,7 +776,7 @@ class SimulationPlotter:
                        bbox_to_anchor=(0.5, 1.0), fontsize=10, frameon=True)
 
             game_title = f'{title} — {game_labels[game]}' if title else game_labels[game]
-            fig.suptitle(game_title, fontsize=14, fontweight='bold', y=1.05)
+            fig.suptitle(game_title, fontsize=14, y=1.05)
             plt.tight_layout(rect=[0, 0, 1, 0.96])
 
             if output_filename:
