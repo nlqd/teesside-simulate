@@ -132,6 +132,25 @@ func calculateFitness(population Population, beta float64) Fitnesses {
 	return fitnesses
 }
 
+// groupCoopCount returns the number of cooperators in the group centred on (ci, cj).
+func groupCoopCount(population Population, ci, cj, sizeX, sizeY int) int {
+	count := 0
+	if population[ci][cj] == StrategyC {
+		count++
+	}
+	for _, n := range getNeighbors(ci, cj, sizeX, sizeY) {
+		if population[n[0]][n[1]] == StrategyC {
+			count++
+		}
+	}
+	return count
+}
+
+// calculateFitnessPGG computes multi-group PGG payoffs following Flores & Han (2024),
+// doi:10.1016/j.amc.2024.128646. Each agent participates in all groups it belongs to:
+// one centred on itself and one centred on each von Neumann neighbour.
+// Contribution cost of 1 is paid once per group the agent cooperates in.
+// Boundary handling matches calculateFitness (non-periodic) for consistency.
 func calculateFitnessPGG(population Population, r float64) Fitnesses {
 	sizeX := len(population)
 	sizeY := len(population[0])
@@ -141,21 +160,21 @@ func calculateFitnessPGG(population Population, r float64) Fitnesses {
 		for j := 0; j < sizeY; j++ {
 			neighbors := getNeighbors(i, j, sizeX, sizeY)
 
-			nCoop := 0
+			// Sum PGG share from all groups this agent belongs to
+			// (group centred on self + one per neighbour)
+			G := float64(len(neighbors) + 1) // group size for self-centred group
+			totalShare := r * float64(groupCoopCount(population, i, j, sizeX, sizeY)) / G
 			for _, n := range neighbors {
-				if population[n[0]][n[1]] == StrategyC {
-					nCoop++
-				}
+				nNeighbors := getNeighbors(n[0], n[1], sizeX, sizeY)
+				nG := float64(len(nNeighbors) + 1)
+				totalShare += r * float64(groupCoopCount(population, n[0], n[1], sizeX, sizeY)) / nG
 			}
 
 			contributionCost := 0.0
 			if population[i][j] == StrategyC {
-				nCoop++
-				contributionCost = 1.0
+				contributionCost = float64(len(neighbors) + 1) // 1 per group participated in
 			}
-
-			groupSize := float64(len(neighbors) + 1)
-			fitnesses[i][j] = (float64(nCoop) * r / groupSize) - contributionCost
+			fitnesses[i][j] = totalShare - contributionCost
 		}
 	}
 	return fitnesses

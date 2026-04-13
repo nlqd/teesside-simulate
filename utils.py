@@ -1,4 +1,5 @@
 import math
+import itertools
 import numpy as np
 
 # import tkinter
@@ -40,46 +41,37 @@ def calculate_fitness(population, payoff_matrix):
 
 def calculate_fitness_pgg(population, r=3.0):
     """
-    Evolution of commitment in the spatial public goods game through institutional incentives
-    - https://www.sciencedirect.com/science/article/pii/S0096300324001188
-    Evolution of Commitment and Level of Participation in Public Goods Games
-    - https://userweb.fct.unl.pt/~lmp/publications/online-papers/com_part_pgg.pdf
+    Multi-group spatial PGG following Flores & Han (2024),
+    doi:10.1016/j.amc.2024.128646, detail: ./pgg-lattice
 
-    Focal user, the other four and the focal user form a group
-    detail: ./pgg-lattice
-
-    Payoff = (n_coop * r / group_size) - contribution_cost
-    where:
-        n_coop = total cooperators in group (including focal if C)
-        group_size = 1 + number of neighbors (usually 5 on interior, less on edges)
-        contribution_cost = 1 if cooperator, 0 if defector
-        r = multiplication factor for public good
-
+    Each agent participates in all groups it belongs to: one centred on itself
+    and one centred on each von Neumann neighbour. For each group g of size G_g:
+        share = r * k_g / G_g
+    Contribution cost of 1 is paid once per group the agent cooperates in.
+    Boundary handling is non-periodic, consistent with calculate_fitness (PD).
     """
     size_x, size_y = population.shape
     fitnesses = np.zeros((size_x, size_y))
 
-    for i in range(size_x):
-        for j in range(size_y):
-            neighbors = []
-            if i > 0:
-                neighbors.append((i - 1, j))
-            if i < size_x - 1:
-                neighbors.append((i + 1, j))
-            if j > 0:
-                neighbors.append((i, j - 1))
-            if j < size_y - 1:
-                neighbors.append((i, j + 1))
+    def neighbors(i, j):
+        nbrs = []
+        if i > 0:           nbrs.append((i - 1, j))
+        if i < size_x - 1:  nbrs.append((i + 1, j))
+        if j > 0:           nbrs.append((i, j - 1))
+        if j < size_y - 1:  nbrs.append((i, j + 1))
+        return nbrs
 
-            n_coop = sum(1 for x, y in neighbors if population[x, y] == 'C')
-            if population[i, j] == 'C':
-                n_coop += 1
-                contribution_cost = 1
-            else:
-                contribution_cost = 0
+    def group_share(ci, cj):
+        members = [(ci, cj)] + neighbors(ci, cj)
+        k_g = sum(1 for x, y in members if population[x, y] == 'C')
+        return r * k_g / len(members)
 
-            group_size = len(neighbors) + 1
-            fitnesses[i, j] = (n_coop * r / group_size) - contribution_cost
+    for i, j in itertools.product(range(size_x), range(size_y)):
+        groups = [(i, j)] + neighbors(i, j)
+        total_share = sum(group_share(gi, gj) for gi, gj in groups)
+        n_groups = len(groups)
+        contribution_cost = n_groups if population[i, j] == 'C' else 0
+        fitnesses[i, j] = total_share - contribution_cost
 
     return fitnesses
 

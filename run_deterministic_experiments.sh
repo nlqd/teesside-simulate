@@ -32,17 +32,17 @@ pgg_params="--game-type pgg --r {1}"
 pop_params="--strategy pop --pc {2}"
 neb_params="--strategy neb --nc {2}"
 
-command_params="--deterministic --output-dir data_deterministic_go"
+command_params="--deterministic --output-dir data_deterministic_go_pgg_5groups"
 
-parallel $parallel_params ./teesside-go $command_params $pd_params $pop_params --seed-start {3} --seed-end '$(('{3}'+1))' \
-    ::: 1.2 1.8 2.0 \
-    ::: 0.25 0.5 0.75 0.90 0.92 0.94 0.96 0.98 1.0 \
-    ::: {0..49}
+# parallel $parallel_params ./teesside-go $command_params $pd_params $pop_params --seed-start {3} --seed-end '$(('{3}'+1))' \
+#     ::: 1.2 1.8 2.0 \
+#     ::: 0.25 0.5 0.75 0.90 0.92 0.94 0.96 0.98 1.0 \
+#     ::: {0..49}
 
-parallel $parallel_params ./teesside-go $command_params $pd_params $neb_params --seed-start {3} --seed-end '$(('{3}'+1))' \
-    ::: 1.2 1.8 2.0 \
-    ::: 1 2 3 4 \
-    ::: {0..49}
+# parallel $parallel_params ./teesside-go $command_params $pd_params $neb_params --seed-start {3} --seed-end '$(('{3}'+1))' \
+#     ::: 1.2 1.8 2.0 \
+#     ::: 1 2 3 4 \
+#     ::: {0..49}
 
 parallel $parallel_params ./teesside-go $command_params $pgg_params $pop_params --seed-start {3} --seed-end '$(('{3}'+1))' \
     ::: 1.5 3 4.5 \
