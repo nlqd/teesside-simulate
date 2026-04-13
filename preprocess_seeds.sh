@@ -55,4 +55,19 @@ python preprocess_seeds.py --data-dir  'data_deterministic_go_second_try/neb_the
 python preprocess_seeds.py --data-dir  'data_deterministic_go_second_try/neb_theta_pgg_r=3.0' --output-dir data_agg_det_go &
 python preprocess_seeds.py --data-dir  'data_deterministic_go_second_try/neb_theta_pgg_r=4.5' --output-dir data_agg_det_go &
 
+# 5 groups fix; might need both deterministic and non-deterministic
+python preprocess_seeds.py --data-dir  'data_deterministic_go_pgg_5groups/pop_theta_pgg_r=1.5' --output-dir data_agg_det_go_5groups &
+python preprocess_seeds.py --data-dir  'data_deterministic_go_pgg_5groups/pop_theta_pgg_r=3.0' --output-dir data_agg_det_go_5groups &
+python preprocess_seeds.py --data-dir  'data_deterministic_go_pgg_5groups/pop_theta_pgg_r=4.5' --output-dir data_agg_det_go_5groups &
+python preprocess_seeds.py --data-dir  'data_deterministic_go_pgg_5groups/neb_theta_pgg_r=1.5' --output-dir data_agg_det_go_5groups &
+python preprocess_seeds.py --data-dir  'data_deterministic_go_pgg_5groups/neb_theta_pgg_r=3.0' --output-dir data_agg_det_go_5groups &
+python preprocess_seeds.py --data-dir  'data_deterministic_go_pgg_5groups/neb_theta_pgg_r=4.5' --output-dir data_agg_det_go_5groups &
+
+python preprocess_seeds.py --data-dir  'data_go_pgg_5groups/pop_theta_pgg_r=1.5' --output-dir data_agg_go_5groups &
+python preprocess_seeds.py --data-dir  'data_go_pgg_5groups/pop_theta_pgg_r=3.0' --output-dir data_agg_go_5groups &
+python preprocess_seeds.py --data-dir  'data_go_pgg_5groups/pop_theta_pgg_r=4.5' --output-dir data_agg_go_5groups &
+python preprocess_seeds.py --data-dir  'data_go_pgg_5groups/neb_theta_pgg_r=1.5' --output-dir data_agg_go_5groups &
+python preprocess_seeds.py --data-dir  'data_go_pgg_5groups/neb_theta_pgg_r=3.0' --output-dir data_agg_go_5groups &
+python preprocess_seeds.py --data-dir  'data_go_pgg_5groups/neb_theta_pgg_r=4.5' --output-dir data_agg_go_5groups &
+
 wait
