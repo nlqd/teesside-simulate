@@ -7,6 +7,8 @@ def pop(population, fitnesses, pc, theta=4.5, a=1):
     return fitnesses, cost
 
 def neb(mode, population, fitnesses, nc, epsilon=4.5, theta=4.5, a=1):
+    # FIXME: Known bug in modes 'i' and 'ii': fitnesses[i][j] is mutated in-place
+    # while iterating over the grid, so results are order-dependent
     cost = 0
     if mode == 'i' or mode == 'ii':
         for i in range(population.shape[0]):

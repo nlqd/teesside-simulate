@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import pandas as pd
 
+FERMI_K = 0.3
+
 def get_fittest_neighbor(neighbors, fitnesses):
     best_pos = neighbors[0]
     for pos in neighbors[1:]:
@@ -17,7 +19,7 @@ def get_fittest_neighbor(neighbors, fitnesses):
             best_pos = pos
     return best_pos
 
-def update_population(population, fitnesses, K=0.3, deterministic=False):
+def update_population(population, fitnesses, K=FERMI_K, deterministic=False):
     new_population = population.copy()
 
     (size_x, size_y) = population.shape
@@ -104,7 +106,7 @@ def simulate_population(size_x=100, size_y=100, generations=50, a=1, b=0,
         history_fitnesses.append(total_fitness)
         history_social_welfare.append(total_fitness - cost)
 
-        population = update_population(population, fitnesses, K=0.3, deterministic=deterministic)
+        population = update_population(population, fitnesses, K=FERMI_K, deterministic=deterministic)
 
     if save_figures:
         path = f'{figure_path}/{game_type}-a={a}-{strategy}'
