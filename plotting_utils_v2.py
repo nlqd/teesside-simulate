@@ -1,3 +1,4 @@
+from turtle import color
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
@@ -546,28 +547,33 @@ class SimulationPlotter:
             coop_freq_nc3_to_compare = data_matrices['coop_freq'][:, len(strategy_params) - 1]
             cost_nc3_to_compare = cost_a[:, len(strategy_params) - 1]
             sw_nc3_to_compare = welfare_a[:, len(strategy_params) - 1]
-            cost_nc3_min = theta_values[np.where(coop_freq_nc3_to_compare > 90)[0][0]]
+            cost_nc3_min = theta_values[np.where(cost_nc3_to_compare == min([cost_nc3_to_compare[i] for i in np.where(coop_freq_nc3_to_compare > 90)[0]]))[0][0]]
             sw_nc3_max = theta_values[np.where(sw_nc3_to_compare/max(sw_nc3_to_compare) == 1)[0][0]]
 
             coef = 1
             if (cost_nc3_min > sw_nc3_max):
                 coef = -1
+            if (cost_nc3_min == sw_nc3_max):
+                coef = 0
 
-            axes[i].plot(sorted(theta_values), (cost_nc3_to_compare - min(cost_nc3_to_compare))/(max(cost_nc3_to_compare) - min(cost_nc3_to_compare)), color='red', label='Total Cost')
-            axes[i].plot(sorted(theta_values), (sw_nc3_to_compare - min(sw_nc3_to_compare))/(max(sw_nc3_to_compare) - min(sw_nc3_to_compare)), label='Social Welfare')
-            axes[i].axhline(0.9, color='gray', linestyle=':', alpha=0.5, label='>90% coop')
-            axes[i].axhline(0.9, xmin=(0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), xmax=(coef*(sw_nc3_max-cost_nc3_min)+0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), color ='green', linestyle='--')
-            axes[i].axvline(cost_nc3_min, linestyle='--', color='red')
-            axes[i].axvline(sw_nc3_max, linestyle='--')
+            axes[i].plot(sorted(theta_values), (cost_nc3_to_compare - min(cost_nc3_to_compare))/(max(cost_nc3_to_compare) - min(cost_nc3_to_compare)), color='lightcoral', label='Total Cost')
+            axes[i].plot(sorted(theta_values), (sw_nc3_to_compare - min(sw_nc3_to_compare))/(max(sw_nc3_to_compare) - min(sw_nc3_to_compare)), color='deepskyblue', label='Social Welfare')
+            axes[i].plot(sorted(theta_values), (coop_freq_nc3_to_compare/100), linestyle='-.', color='darkcyan', label='Coop Freq')
+            # axes[i].axhline(0.9, color='gray', linestyle=':', alpha=0.5, label='>90% coop')
+            axes[i].axhline(0.9, xmin=(0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), xmax=(coef*(sw_nc3_max-cost_nc3_min)+0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), color ='limegreen', linestyle='--')
+            axes[i].axvline(cost_nc3_min, linestyle=(0, (3, 3)), color='lightcoral')
+            axes[i].axvline(sw_nc3_max, linestyle=(2, (3, 3)), color='deepskyblue')
             axes[i].text(cost_nc3_min+0.01, 0.5, round(cost_nc3_min, 1), rotation=90, va='center')
             axes[i].text(sw_nc3_max+0.01, 0.5, round(sw_nc3_max, 1), rotation=90, va='center')
             axes[i].text((cost_nc3_min + sw_nc3_max)/2, 0.92, 'Δθ', va='center')
-            axes[i].plot([cost_nc3_min], [0.9], color='green', marker="o")
-            axes[i].plot([sw_nc3_max], [0.9], color='green', marker="o")
+            axes[i].plot([cost_nc3_min], [0.9], color='limegreen', marker="o")
+            axes[i].plot([sw_nc3_max], [0.9], color='limegreen', marker="o")
             if (coef == -1):
                 axes[i].set_xlim(sw_nc3_max - 0.2, cost_nc3_min + 0.2)
-            else:
+            elif (coef == 1):
                 axes[i].set_xlim(cost_nc3_min - 0.2, sw_nc3_max + 0.2)
+            else:
+                pass
             axes[i].set_ylim(0, 1.1)
             axes[i].set_xlabel('Per-individual investment cost, θ', fontsize=self.config.label_fontsize)
             axes[i].set_ylabel('Normalized Value', fontsize=self.config.label_fontsize)
@@ -618,28 +624,33 @@ class SimulationPlotter:
                 coop_freq_nc3_to_compare = data_matrices['coop_freq'][:, len(strategy_params) - 2 + i]
                 cost_nc3_to_compare = cost_a[:, len(strategy_params) - 2 + i]
                 sw_nc3_to_compare = welfare_a[:, len(strategy_params) - 2 + i]
-                cost_nc3_min = theta_values[np.where(coop_freq_nc3_to_compare > 90)[0][0]]
+                cost_nc3_min = theta_values[np.where(cost_nc3_to_compare == min([cost_nc3_to_compare[i] for i in np.where(coop_freq_nc3_to_compare > 90)[0]]))[0][0]]
                 sw_nc3_max = theta_values[np.where(sw_nc3_to_compare/max(sw_nc3_to_compare) == 1)[0][0]]
                 
                 coef = 1
                 if (cost_nc3_min > sw_nc3_max):
                     coef = -1
+                if (cost_nc3_min == sw_nc3_max):
+                    coef = 0
 
-                axes[i][j].plot(sorted(theta_values), (cost_nc3_to_compare - min(cost_nc3_to_compare))/(max(cost_nc3_to_compare) - min(cost_nc3_to_compare)), color='red', label='Total Cost')
-                axes[i][j].plot(sorted(theta_values), (sw_nc3_to_compare - min(sw_nc3_to_compare))/(max(sw_nc3_to_compare) - min(sw_nc3_to_compare)), label='Social Welfare')
-                axes[i][j].axhline(0.9, color='gray', linestyle=':', alpha=0.5, label='>90% coop')
-                axes[i][j].axhline(0.9, xmin=(0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), xmax=(coef*(sw_nc3_max-cost_nc3_min)+0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), color ='green', linestyle='--')
-                axes[i][j].axvline(cost_nc3_min, linestyle='--', color='red')
-                axes[i][j].axvline(sw_nc3_max, linestyle='--')
+                axes[i][j].plot(sorted(theta_values), (cost_nc3_to_compare - min(cost_nc3_to_compare))/(max(cost_nc3_to_compare) - min(cost_nc3_to_compare)), color='lightcoral', label='Total Cost')
+                axes[i][j].plot(sorted(theta_values), (sw_nc3_to_compare - min(sw_nc3_to_compare))/(max(sw_nc3_to_compare) - min(sw_nc3_to_compare)), color='deepskyblue', label='Social Welfare')
+                axes[i][j].plot(sorted(theta_values), (coop_freq_nc3_to_compare/100), linestyle='-.', color='darkcyan', label='Coop Freq')
+                # axes[i][j].axhline(0.9, color='gray', linestyle=':', alpha=0.5, label='>90% coop')
+                axes[i][j].axhline(0.9, xmin=(0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), xmax=(coef*(sw_nc3_max-cost_nc3_min)+0.2)/(coef*(sw_nc3_max - cost_nc3_min) + 0.4), color ='limegreen', linestyle='--')
+                axes[i][j].axvline(cost_nc3_min, linestyle=(0, (3, 3)), color='lightcoral')
+                axes[i][j].axvline(sw_nc3_max, linestyle=(2, (3, 3)), color='deepskyblue')
                 axes[i][j].text(cost_nc3_min+0.01, 0.5, round(cost_nc3_min, 1), rotation=90, va='center')
                 axes[i][j].text(sw_nc3_max+0.01, 0.5, round(sw_nc3_max, 1), rotation=90, va='center')
                 axes[i][j].text((cost_nc3_min + sw_nc3_max)/2, 0.92, 'Δθ', va='center')
-                axes[i][j].plot([cost_nc3_min], [0.9], color='green', marker="o")
-                axes[i][j].plot([sw_nc3_max], [0.9], color='green', marker="o")
+                axes[i][j].plot([cost_nc3_min], [0.9], color='limegreen', marker="o")
+                axes[i][j].plot([sw_nc3_max], [0.9], color='limegreen', marker="o")
                 if (coef == 1):
                     axes[i][j].set_xlim(cost_nc3_min - 0.2, sw_nc3_max + 0.2)
-                else:
+                elif (coef == -1):
                     axes[i][j].set_xlim(sw_nc3_max - 0.2, cost_nc3_min + 0.2)
+                elif (coef == 0):
+                    pass
                 axes[i][j].set_xlabel('Per-individual investment cost, θ', fontsize=self.config.label_fontsize)
                 axes[i][j].set_ylabel('Normalized Value', fontsize=self.config.label_fontsize)
                 axes[i][j].set_title(f'{strategy_params[len(strategy_params) - 2 + i]}, a={a}', fontsize=self.config.title_fontsize, fontweight='bold')
